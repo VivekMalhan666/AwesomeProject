@@ -10,14 +10,42 @@ import {
   Dimensions,
 } from "react-native";
 import { LineChart } from "react-native-chart-kit";
+import Entries from "./Components/Entries";
+import moment from "moment";
 
 export default function App() {
   const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState(0);
+  const [amount, setAmount] = useState('');
   const [total, setTotal] = useState(0);
-  const [labels, setLabels] = useState([]);
-  const [dataPoints, setDataPoints] = useState([]);
-  const [entries, setEntries] = useState([
+  const [data, setData] = useState([ 
+  { date: moment().format('LL'), amount: 2000 },
+  { date: moment().subtract(1, 'days').format('LL'), amount: 2500 },
+  { date: moment().subtract(1, 'days').format('LL'), amount: 3500 },
+  { date: moment().subtract(1, 'days').format('LL'), amount: 3500 },
+  { date: moment().subtract(1, 'days').format('LL'), amount: 3500 },
+  { date: moment().subtract(7, 'days').format('LL'), amount: 3500 },
+  { date: moment().subtract(6, 'days').format('LL'), amount: 3500 },
+  { date: moment().subtract(5, 'days').format('LL'), amount: 3500 },
+  { date: moment().subtract(4, 'days').format('LL'), amount: 3500 },
+  { date: moment().subtract(3, 'days').format('LL'), amount: 4500 },
+  { date: moment().subtract(2, 'days').format('LL'), amount: 5500 },
+  { date: moment().subtract(2, 'days').format('LL'), amount: 5500 },
+]);
+
+  const [transformedData, setTransformedData] = useState([]);
+
+  useEffect(() => {
+    setTransformedData(transformData(groupBy(data, 'date')));
+  }, [data])
+
+  const groupBy=(array,key)=>{
+    array.reduce((rv,x)=>{
+      (rv[x[key]]=rv[x[key]]||[].push(x));
+      return rv;
+    },{})
+  }
+
+  const [gigs, setGigs] = useState([
     {
       description: "Edulyx",
       amount: 35000,
@@ -25,27 +53,46 @@ export default function App() {
     },
   ]);
 
-  useEffect(() => {}, [entries]);
+  const getDates = () => transformedData.map((pair) => pair.date);
+  const getAmount = () => transformedData.map((pair) => pair.amount);
+  const transformData = (groupedData) => {
+    const transformedArray = [];
+
+    Object.entries(groupedData).forEach(entry => {
+      const total = entry[1].reduce((total, pair) => total + pair.amount, 0)
+      transformedArray.push({ date: moment(entry[0]).format('MM/DD'), amount: total })
+    })
+
+    const sortedArray = transformedArray.sort((a, b) => moment(a['date']).diff(moment(b['date'])))
+
+    return sortedArray;
+  }
 
   useEffect(() => {
     setTotal(
-      entries.reduce((total, entries) => {
-        return total + Number(entries.amount);
+      gigs.reduce((total, gigs) => {
+        return total + Number(gigs.amount);
       }, 0)
     );
-  }, [entries]);
+  }, [gigs]);
 
   const addGigs = () => {
-    setEntries([
-      ...entries,
+    setGigs([
+      ...gigs,
       {
         description: description,
         amount: amount,
-        timestamp: new Date(),
       },
     ]);
+    setData([
+      ...data,
+      {
+        date:moment().format('LL'),
+        amount:Number(amount)
+      }
+    ])
     setDescription("");
-    setAmount(0);
+    setAmount('');
   };
 
   return (
@@ -57,23 +104,20 @@ export default function App() {
       <View>
         <LineChart
           data={{
-            labels: ["Mon", "Tues", "Wed", "Thurs", "Fri"],
-            datasets: [
-              {
-                data: [entries[0].amount, Math.random() * 100],
-              },
-            ],
+            labels: getDates(),
+            datasets: [{
+              data:getAmount()
+            }]
           }}
           width={Dimensions.get("window").width} // from react-native
           height={220}
           yAxisLabel="₹"
-          yAxisSuffix=""
           yAxisInterval={1} // optional, defaults to 1
           chartConfig={{
             backgroundColor: "#e26a00",
             backgroundGradientFrom: "#fb8c00",
             backgroundGradientTo: "#ffa726",
-            decimalPlaces: 1, // optional, defaults to 2dp
+            decimalPlaces: null, // optional, defaults to 2dp
             color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
             labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
             style: {
@@ -92,6 +136,9 @@ export default function App() {
           }}
         />
       </View>
+      <ScrollView>
+        <Entries gigs={gigs} />
+      </ScrollView>
       <TextInput
         value={description}
         style={styles.input}
@@ -112,12 +159,6 @@ export default function App() {
         title="Add Your Gig"
         onPress={addGigs}
       />
-      {entries.map((entry) => (
-        <ScrollView>
-          <Text style={styles.text}>{entry.description}</Text>
-          <Text style={styles.text}>{entry.amount}</Text>
-        </ScrollView>
-      ))}
     </SafeAreaView>
   );
 }
@@ -139,7 +180,7 @@ const styles = StyleSheet.create({
   input: {
     margin: 5,
     height: 40,
-    borderColor: "red",
+    borderColor: "cyan",
     borderWidth: 1,
     color: "#fff",
   },
