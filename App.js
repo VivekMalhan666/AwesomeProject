@@ -146,7 +146,7 @@ const App = () => {
 			{gigs.map((gig) => (
 				<View key={gig}>
 					<Text style={styles.text}>{gig.description}</Text>
-					<Text style={styles.text}>${gig.amount}</Text>
+					<Text style={styles.text}>₹{gig.amount}</Text>
 				</View>
 			))}
 			<TextInput
